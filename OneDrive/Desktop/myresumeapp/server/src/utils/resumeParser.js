@@ -1,15 +1,15 @@
-const { OpenAI } = require('openai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const pdf = require('pdf-parse');
 const fs = require('fs');
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const parseResumeText = async (filePath) => {
     const dataBuffer = fs.readFileSync(filePath);
     const data = await pdf(dataBuffer);
     const text = data.text;
+
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
     Extract the following information from the resume text in JSON format:
@@ -21,17 +21,18 @@ const parseResumeText = async (filePath) => {
     - experience (number of years, internships count as 0.5 each)
     - education (highest degree)
 
-    Ensure the output is valid JSON and only the JSON.
+    Ensure the output is valid JSON and only the JSON. Do not include markdown code blocks.
     Text: ${text}
     `;
 
-    const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" }
-    });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let textResponse = response.text();
+    
+    // Clean up potential markdown code blocks
+    textResponse = textResponse.replace(/^```json\n?/, '').replace(/\n?```$/, '');
 
-    return JSON.parse(response.choices[0].message.content);
+    return JSON.parse(textResponse);
 };
 
 module.exports = { parseResumeText };
