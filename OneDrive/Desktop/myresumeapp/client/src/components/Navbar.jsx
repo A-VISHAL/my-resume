@@ -1,13 +1,27 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LogOut, User, FileText } from 'lucide-react';
+import { LayoutDashboard, LogOut, User, FileText, ToggleLeft, ToggleRight } from 'lucide-react';
 
-const Navbar = ({ user, onLogout }) => {
+const Navbar = ({ user, onLogout, onLogin }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
     onLogout();
     navigate('/');
+  };
+
+  const devLogin = (role) => {
+    const userData = {
+      user: {
+        name: role === 'admin' ? 'Admin User' : 'Student User',
+        email: role === 'admin' ? 'admin@example.com' : 'student@example.com',
+        role: role,
+        _id: role === 'admin' ? 'dummy_admin_id' : 'dummy_student_id' // Will not be used by backend since we bypass
+      },
+      token: role === 'admin' ? 'dev-token-admin' : 'dev-token-student'
+    };
+    onLogin(userData);
+    navigate(role === 'admin' ? '/admin-dashboard' : '/student-dashboard');
   };
 
   return (
@@ -21,9 +35,25 @@ const Navbar = ({ user, onLogout }) => {
         </Link>
 
         <div className="flex items-center gap-6">
+          {/* DEV SWITCH */}
+          <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
+            <button
+              onClick={() => devLogin('student')}
+              className={`px-3 py-1 text-xs rounded-md transition-all ${user?.role === 'student' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+            >
+              Student
+            </button>
+            <button
+              onClick={() => devLogin('admin')}
+              className={`px-3 py-1 text-xs rounded-md transition-all ${user?.role === 'admin' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+            >
+              Admin
+            </button>
+          </div>
+
           {user ? (
             <>
-              <Link 
+              <Link
                 to={user.role === 'admin' ? '/admin-dashboard' : '/student-dashboard'}
                 className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
               >
@@ -34,7 +64,7 @@ const Navbar = ({ user, onLogout }) => {
                 <User className="w-4 h-4 text-indigo-400" />
                 <span className="text-sm font-medium">{user.name}</span>
               </div>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="p-2 text-slate-400 hover:text-red-400 transition-colors"
               >
